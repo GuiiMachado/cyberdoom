@@ -1,0 +1,8 @@
+{
+  "name": "cyber-doom-operacao-pc-protegido",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node tests/test_logic.mjs"},
+  "description": "Jogo FPS original e educativo em HTML5, CSS3 e JavaScript."
+}

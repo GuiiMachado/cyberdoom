@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060e19">
+  <title>CYBER DOOM — Operação PC Protegido</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+    <section id="menu" class="screen menu-screen">
+      <div class="ambient-grid" aria-hidden="true"></div>
+      <div class="menu-content">
+        <p class="eyebrow">SENAI // MISSÃO DE CIBERDEFESA</p>
+        <h1>CYBER <span>DOOM</span></h1>
+        <p class="subtitle">OPERAÇÃO PC PROTEGIDO</p>
+        <p class="tagline">Elimine as ameaças. Restaure o sistema. Proteja o computador.</p>
+        <div class="menu-actions">
+          <button id="btn-play" class="primary">▶ INICIAR MISSÃO</button>
+          <button id="btn-ranking">★ HALL DA FAMA</button>
+          <button id="btn-help">⌨ COMO JOGAR</button>
+          <button id="btn-about">◈ SOBRE O PROJETO</button>
+        </div>
+        <div class="menu-audio-card">
+          <div>
+            <strong>TRILHA DE TENSÃO</strong>
+            <span id="menu-music-preview">Selecione uma trilha e ajuste o volume na tela de preparação.</span>
+          </div>
+          <button id="btn-audio-setup">♪ CONFIGURAR ÁUDIO</button>
+        </div>
+        <p class="micro">Jogo original, offline e educativo • HTML5 / Canvas / JavaScript</p>
+      </div>
+      <div class="vertical-label">SISTEMA // EM RISCO</div>
+    </section>
+
+    <section id="setup" class="screen panel-screen hidden">
+      <div class="panel">
+        <p class="eyebrow">IDENTIFICAÇÃO DO AGENTE</p>
+        <h2>Preparar missão</h2>
+        <label for="nickname">APELIDO DO JOGADOR (3 A 12 CARACTERES)</label>
+        <input id="nickname" maxlength="12" autocomplete="off" placeholder="EX: AGENTE_01" spellcheck="false">
+        <p id="setup-error" class="error" role="alert"></p>
+        <label for="difficulty">NÍVEL DE AMEAÇA</label>
+        <select id="difficulty">
+          <option value="easy">FÁCIL — Iniciante</option>
+          <option value="medium" selected>MÉDIO — Agente</option>
+          <option value="hard">DIFÍCIL — Especialista</option>
+        </select>
+        <div class="settings-grid">
+          <div class="setting-box">
+            <label for="mouse-sense">SENSIBILIDADE DO MOUSE</label>
+            <div class="range-row">
+              <input id="mouse-sense" type="range" min="0.4" max="2.5" step="0.1" value="1">
+              <strong id="mouse-sense-value">1.0x</strong>
+            </div>
+          </div>
+          <div class="setting-box">
+            <label for="music-track">MÚSICA DE TENSÃO</label>
+            <select id="music-track">
+              <option value="none">SEM MÚSICA</option>
+              <option value="tense1" selected>TENSÃO // BAIXA</option>
+              <option value="tense2">TENSÃO // MÉDIA</option>
+              <option value="tense3">TENSÃO // MÁXIMA</option>
+            </select>
+          </div>
+          <div class="setting-box">
+            <label for="music-volume">VOLUME DA MÚSICA</label>
+            <div class="range-row">
+              <input id="music-volume" type="range" min="0" max="1" step="0.05" value="0.45">
+              <strong id="music-volume-value">45%</strong>
+            </div>
+          </div>
+          <div class="setting-box">
+            <label for="sfx-volume">VOLUME DOS EFEITOS</label>
+            <div class="range-row">
+              <input id="sfx-volume" type="range" min="0" max="1" step="0.05" value="0.75">
+              <strong id="sfx-volume-value">75%</strong>
+            </div>
+          </div>
+        </div>
+        <div class="hint-box">Campanha com 3 setores, terminais de conhecimento, novas armas, trilhas de tensão e um chefe final. Cada dificuldade tem seu próprio ranking.</div>
+        <div class="button-row"><button id="btn-start" class="primary">INICIAR OPERAÇÃO →</button><button class="back-menu">VOLTAR</button></div>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen hidden" aria-label="Jogo em primeira pessoa">
+      <canvas id="game-canvas" width="960" height="540" aria-label="Cenário 3D do jogo"></canvas>
+      <div id="damage-flash" aria-hidden="true"></div>
+      <div class="hud hud-top">
+        <div class="hud-card health-card"><div class="hud-label">INTEGRIDADE DO PC</div><div class="health-line"><div id="health-track"><div id="health-fill"></div></div><strong id="health-number">100%</strong></div></div>
+        <div class="hud-card"><div class="hud-label">PONTUAÇÃO</div><strong id="score">000000</strong></div>
+        <div class="hud-card"><div class="hud-label">TEMPO</div><strong id="timer">00:00</strong></div>
+        <div class="hud-card"><div class="hud-label">AMEAÇAS</div><strong id="kills">0</strong></div>
+        <div class="hud-card"><div class="hud-label">PROTEÇÃO</div><strong id="shield">OFF</strong></div>
+        <div class="hud-card weapon-card"><div class="hud-label">ARMA ATUAL</div><strong id="weapon-name">DESERT EAGLE</strong></div>
+      </div>
+      <div class="hud-left"><div id="level-label" class="level-title">SETOR 1</div><div class="objective-box"><div class="hud-label">OBJETIVOS</div><div id="objectives"></div></div></div>
+      <div id="boss-box" class="hidden"><span>⚠ RANSOMWARE // NÚCLEO HOSTIL</span><div id="boss-track"><div id="boss-fill"></div></div></div>
+      <div id="crosshair" aria-hidden="true">+</div>
+      <div id="interaction-hint" class="hidden">[ E ] INTERAGIR</div>
+      <div id="toast" role="status" aria-live="polite"></div>
+      <div class="hud-bottom"><div id="weapon-status">DESERT EAGLE <strong>∞</strong></div><div>WASD MOVER • MOUSE MIRAR • CLIQUE/ESPAÇO ATIRAR • E INTERAGIR • Q OU 1/2/3 TROCAR ENTRE DESERT EAGLE, MP40 E AK-47 • ESC PAUSAR</div><button id="btn-pause">Ⅱ PAUSAR</button></div>
+      <div id="weapon" data-weapon="pulse" aria-hidden="true"><div class="weapon-core"></div><div class="weapon-glow"></div><div class="weapon-detail"></div></div>
+      <canvas id="minimap" width="144" height="144" aria-label="Minimapa"></canvas>
+    </section>
+
+    <section id="pause" class="overlay hidden"><div class="panel narrow"><p class="eyebrow">SESSÃO INTERROMPIDA</p><h2>PAUSADO</h2><p>O sistema ficará aguardando sua volta.</p><button id="btn-resume" class="primary">▶ CONTINUAR</button><button id="btn-exit-game">SAIR PARA MENU</button></div></section>
+    <section id="quiz" class="overlay hidden"><div class="panel question-panel"><p class="eyebrow">TERMINAL EDUCATIVO // SENAI</p><div id="quiz-topic" class="small-label"></div><h2 id="quiz-question"></h2><div id="quiz-options" class="quiz-options"></div><p id="quiz-feedback" aria-live="polite"></p><button id="btn-quiz-close" class="primary hidden">CONTINUAR MISSÃO →</button></div></section>
+    <section id="result" class="screen panel-screen hidden"><div class="panel results-panel"><p class="eyebrow">RELATÓRIO FINAL DE OPERAÇÃO</p><h2 id="result-title"></h2><p id="result-message"></p><div id="result-stats" class="stats-grid"></div><p id="result-record" class="record-text"></p><div class="button-row"><button id="btn-again" class="primary">NOVO JOGADOR</button><button id="btn-result-ranking">HALL DA FAMA</button><button class="back-menu">MENU</button></div></div></section>
+    <section id="ranking" class="screen panel-screen hidden"><div class="panel wide"><p class="eyebrow">REGISTROS LOCAIS</p><h2>★ HALL DA FAMA</h2><div class="rank-controls"><label for="rank-difficulty">DIFICULDADE</label><select id="rank-difficulty"><option value="easy">FÁCIL</option><option value="medium" selected>MÉDIO</option><option value="hard">DIFÍCIL</option></select></div><div class="table-scroll"><table><thead><tr><th>#</th><th>AGENTE</th><th>PONTOS</th><th>TEMPO</th><th>ELIMINAÇÕES</th><th>STATUS</th></tr></thead><tbody id="ranking-rows"></tbody></table></div><p class="micro">Ranking salvo somente neste navegador/computador. Não é compartilhado na rede e pode ser alterado por quem tem acesso local.</p><div class="button-row"><button class="back-menu primary">VOLTAR AO MENU</button><button id="btn-admin" class="quiet">ADMINISTRAR RANKING</button></div></div></section>
+    <section id="help" class="screen panel-screen hidden"><div class="panel wide"><p class="eyebrow">MANUAL DO AGENTE</p><h2>COMO JOGAR</h2><div class="help-grid"><div><h3>MOVIMENTAÇÃO</h3><p><kbd>W</kbd> avançar • <kbd>S</kbd> recuar • <kbd>A</kbd> e <kbd>D</kbd> lateralmente • <kbd>Shift</kbd> correr</p><p>Mova o <strong>mouse</strong> para olhar. <strong>Clique esquerdo</strong> para disparar.</p><p><kbd>E</kbd> interage com terminais e portas. <kbd>Q</kbd> ou <kbd>1/2/3</kbd> trocam a arma. <kbd>ESC</kbd> pausa ou libera o mouse.</p></div><div><h3>MISSÃO</h3><p>Elimine vírus, worms e troianos. Colete chaves, backups e atualizações. Abra as portas e alcance os objetivos marcados.</p><p>Nos terminais educativos, responda às questões de informática para conquistar pontos.</p><p>Na última fase, derrote o ransomware e recupere o núcleo.</p></div></div><button class="back-menu primary">ENTENDI →</button></div></section>
+    <section id="about" class="screen panel-screen hidden"><div class="panel wide"><p class="eyebrow">PROJETO EDUCACIONAL SENAI</p><h2>OPERAÇÃO PC PROTEGIDO</h2><p>FPS retrô original que representa a defesa de um computador infectado. O jogador atua como agente de segurança e aplica conceitos de hardware, redes, banco de dados, programação e segurança da informação.</p><p>Construído com HTML5, CSS3 e JavaScript, raycasting no Canvas 2D, áudio sintetizado e LocalStorage. Sem serviços externos e sem recursos copiados de outros jogos.</p><p>Projeto demonstrativo para feira do curso Técnico em Informática.</p><button class="back-menu primary">VOLTAR</button></div></section>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
