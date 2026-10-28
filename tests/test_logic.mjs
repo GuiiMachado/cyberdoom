@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {Game} from '../js/game.js';
+import {canExit} from '../js/missions.js';
 import {CONFIG,ENEMY_TYPES} from '../js/config.js';
 import {canStand,lineClear,LEVELS,makeLevel} from '../js/levels.js';
 import {validNickname,compareScores,formatTime,topScores,saveScore,clearScores} from '../js/leaderboard.js';
@@ -87,9 +88,50 @@ test('Questão pontua uma vez e terminal é consumido',()=>{
   const {game:g}=setup('easy');
   g.player.x=12.5;g.player.y=11.5;g.interact();assert.equal(g.status,'quiz');
   const question=g.currentQuestion, score=g.score;
-  const result=g.answerQuiz(question.correct);assert(result.correct);assert.equal(g.score,score+150);
+  const ammo=g.weaponAmmo.disruptor;
+  const result=g.answerQuiz(question.correct);assert(result.correct);assert(result.why&&result.hint);assert.equal(g.weaponAmmo.disruptor,ammo+10);assert.equal(g.score,score+150);
   assert.equal(g.answeredQuestions.size,1);assert(g.level.terminals[0].used);
   g.closeQuiz();assert.equal(g.status,'playing');
+});
+test('Missões opcionais de proteção e desarme funcionam e não bloqueiam a saída',()=>{
+  const {game:g}=setup('easy');
+  assert(g.level.defensePoint);
+  for(const key of ['key','doors','archive','clear'])g.level.tasks[key]=true;
+  assert(canExit(g));
+  g.level.enemies.forEach(enemy=>{enemy.dead=true;});
+  g.player.x=g.level.defensePoint.x;g.player.y=g.level.defensePoint.y;g.interact();
+  assert(g.level.defensePoint.active);
+  for(let i=0;i<260;i++){g.player.x=g.level.defensePoint.x;g.player.y=g.level.defensePoint.y;g.update(.05);}
+  assert(g.level.tasks.defend);
+  g.openLevel(1);assert(g.level.disarmPoint);
+  for(const key of ['key','doors','firewall','clear'])g.level.tasks[key]=true;
+  assert(canExit(g));
+  g.player.x=g.level.disarmPoint.x;g.player.y=g.level.disarmPoint.y;g.interact();
+  assert(g.level.tasks.disarm);
+});
+test('Estação de melhorias vende reparo, cadência, precisão e firewall',()=>{
+  const {game:g}=setup('easy');g.score=2000;g.health=65;
+  g.player.x=g.level.upgradePoint.x;g.player.y=g.level.upgradePoint.y;g.interact();
+  assert.equal(g.status,'upgrade');
+  assert(g.buyUpgrade('health'));assert.equal(g.health,95);
+  assert(g.buyUpgrade('rapid'));assert(g.upgrades.rapid);
+  assert(g.buyUpgrade('precision'));assert(g.upgrades.precision);
+  assert(g.buyUpgrade('shield'));assert(g.shieldUntil>g.elapsed);
+  assert(!g.buyUpgrade('rapid'));assert(g.score<2000);
+  g.closeUpgrade();assert.equal(g.status,'playing');
+});
+test('Troiano e worm anunciam ataques especiais antes de atacar; ponto fraco do chefe dobra dano',()=>{
+  const {game:g}=setup('easy');g.elapsed=10;
+  const trojan=g.level.enemies.find(e=>e.type==='trojan');
+  trojan.x=g.player.x+3;trojan.y=g.player.y;updateEnemies(g,.01);
+  assert.equal(trojan.warningType,'charge');
+  const worm=g.level.enemies.find(e=>e.type==='worm');
+  worm.x=g.player.x+5;worm.y=g.player.y;updateEnemies(g,.01);
+  assert.equal(worm.warningType,'spore');
+  g.openLevel(2);g.elapsed=1;
+  const boss=g.level.enemies.find(e=>e.type==='ransomware');
+  boss.x=g.player.x+2;boss.y=g.player.y;g.player.angle=0;g.player.pitch=Math.atan2(.82,2);
+  const hp=boss.hp;g.fire();assert.equal(hp-boss.hp,g.weapon.damage*2);
 });
 test('Chefe final libera núcleo e condições de vitória',()=>{
   const {game:g,getResult}=setup('hard');g.openLevel(2);

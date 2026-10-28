@@ -1,15 +1,15 @@
 import {CONFIG,WEAPONS} from './config.js';
 import {makeLevel} from './levels.js';
-import {movePlayer} from './player.js';
+import {movePlayer,jumpPlayer} from './player.js';
 import {initEnemies,updateEnemies,shoot} from './enemies.js';
 import {completeTask,canExit,totalCompleted} from './missions.js';
 import {nextQuestion} from './quiz.js';
 import {sound} from './audio.js';
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-const weaponOrder=['deagle','mp40','ak47'];
+const weaponOrder=['deagle','disruptor','mp40','ak47'];
 export class Game{
-  constructor({onEnd,onQuiz,onNotice,onLevel,onWeapon}){
-    this.onEnd=onEnd;this.onQuiz=onQuiz;this.onNotice=onNotice;this.onLevel=onLevel;this.onWeapon=onWeapon;
+  constructor({onEnd,onQuiz,onNotice,onLevel,onWeapon,onUpgrade}){
+    this.onEnd=onEnd;this.onQuiz=onQuiz;this.onNotice=onNotice;this.onLevel=onLevel;this.onWeapon=onWeapon;this.onUpgrade=onUpgrade;
     this.status='menu';this.keys=new Set();this.answeredQuestions=new Set();
   }
   start(nick,difficultyName){
@@ -18,7 +18,8 @@ export class Game{
     this.health=100;this.score=0;this.kills=0;this.elapsed=0;this.levelIndex=0;
     this.completedObjectives=0;this.answeredQuestions=new Set();this.shieldUntil=0;
     this.lastDamage=-10;this.lastShot=-10;this.muzzle=0;this.hitMarker=0;this.dmgFlash=0;
-    this.resultSaved=false;this.keys.clear();this.weaponKey='deagle';this.weapon=WEAPONS[this.weaponKey];
+    this.resultSaved=false;this.keys.clear();this.weaponKey='deagle';this.weapon=WEAPONS[this.weaponKey];this.weaponAmmo={disruptor:WEAPONS.disruptor.ammo};
+    this.upgrades={rapid:false,precision:false,health:0};this.poisonUntil=0;this.poisonTickAt=0;this.weakHitFlash=0;
     this.openLevel(0);this.status='playing';
     this.onWeapon?.(this.weaponKey,this.weapon);
     this.notice('INICIALIZAÇÃO CONCLUÍDA. PROTEJA O SISTEMA!');
@@ -26,7 +27,7 @@ export class Game{
   openLevel(index){
     this.levelIndex=index;this.level=makeLevel(index,this.difficulty);
     initEnemies(this.level,this.difficulty);
-    this.player={...this.level.start,angle:0,walkTime:0,hasKey:false};
+    this.player={...this.level.start,angle:0,pitch:0,walkTime:0,hasKey:false,jumpHeight:0,jumpVelocity:0};
     this.onLevel?.();
   }
   notice(text){this.onNotice?.(text);}
@@ -41,13 +42,39 @@ export class Game{
     const idx=(weaponOrder.indexOf(this.weaponKey)+1)%weaponOrder.length;
     this.setWeapon(weaponOrder[idx]);
   }
+  selectWeaponSlot(slot){this.setWeapon(slot===1?'deagle':slot===2?'disruptor':'');}
   update(dt){
     if(this.status!=='playing')return;
     dt=Math.min(.05,dt);this.elapsed+=dt;
     this.muzzle=Math.max(0,this.muzzle-dt);this.hitMarker=Math.max(0,this.hitMarker-dt);this.dmgFlash=Math.max(0,this.dmgFlash-dt*1.75);
+    this.weakHitFlash=Math.max(0,this.weakHitFlash-dt);
     movePlayer(this.player,this.level,this.keys,dt);
+    this.updateDefenseChallenge(dt);
     updateEnemies(this,dt);
+    if(this.elapsed>=this.poisonTickAt&&this.elapsed<this.poisonUntil){this.poisonTickAt=this.elapsed+1;this.takeDamage(3);}
     this.collectPickups();
+  }
+  jump(){if(this.status==='playing')return jumpPlayer(this.player);return false;}
+  closeUpgrade(){if(this.status==='upgrade'){this.status='playing';this.onUpgrade?.(false);}}
+  buyUpgrade(key){
+    if(this.status!=='upgrade')return false;
+    const options={health:{cost:300,label:'Reparo de emergência'},rapid:{cost:450,label:'Disparos rápidos'},precision:{cost:350,label:'Mira calibrada'},shield:{cost:250,label:'Firewall temporário'}};
+    const item=options[key];if(!item||this.score<item.cost)return false;
+    if(key==='health'&&this.health>=100||key==='rapid'&&this.upgrades.rapid||key==='precision'&&this.upgrades.precision)return false;
+    this.score-=item.cost;
+    if(key==='health'){this.health=Math.min(100,this.health+30);this.upgrades.health++;}
+    else if(key==='rapid')this.upgrades.rapid=true;
+    else if(key==='precision')this.upgrades.precision=true;
+    else if(key==='shield')this.shieldUntil=Math.max(this.shieldUntil,this.elapsed)+12;
+    this.notice(`${item.label.toUpperCase()} ADQUIRIDO`);this.onUpgrade?.(true);return true;
+  }
+  updateDefenseChallenge(dt){
+    const challenge=this.level.defensePoint;
+    if(!challenge?.active||this.level.tasks.defend)return;
+    if(distance(this.player,challenge)<=1.35){
+      challenge.remaining=Math.max(0,challenge.remaining-dt);
+      if(challenge.remaining===0){challenge.active=false;completeTask(this,'defend');this.notice('SERVIDOR PROTEGIDO!');}
+    }
   }
   collectPickups(){
     for(const p of this.level.pickups){
@@ -78,6 +105,9 @@ export class Game{
     }
     for(const t of this.level.terminals)if(!t.used)options.push({...t,kind:'terminal',label:'ACESSAR TERMINAL'});
     if(this.level.firewall&&!this.level.firewall.used)options.push({...this.level.firewall,kind:'firewall',label:'ATIVAR FIREWALL'});
+    if(this.level.upgradePoint)options.push({...this.level.upgradePoint,kind:'upgrade',label:'ACESSAR ESTAÇÃO DE MELHORIAS'});
+    if(this.level.defensePoint&&!this.level.tasks.defend)options.push({...this.level.defensePoint,kind:'defend',label:this.level.defensePoint.active?'PROTEGER SERVIDOR':'INICIAR PROTEÇÃO DO SERVIDOR'});
+    if(this.level.disarmPoint&&!this.level.tasks.disarm)options.push({...this.level.disarmPoint,kind:'disarm',label:'DESARMAR NÓ DE VÍRUS'});
     options.push({...this.level.exit,kind:'exit',label:this.level.exit.type==='core'?'RESTAURAR NÚCLEO':'ACESSAR PRÓXIMO SETOR'});
     const close=options.filter(o=>distance(this.player,o)<1.42).sort((a,b)=>distance(this.player,a)-distance(this.player,b));
     return close[0]||null;
@@ -100,6 +130,12 @@ export class Game{
     }else if(target.kind==='firewall'){
       this.level.firewall.used=true;this.shieldUntil=this.elapsed+20;
       completeTask(this,'firewall');sound('success');this.notice('FIREWALL ATIVADO. PROTEÇÃO REFORÇADA.');
+    }else if(target.kind==='defend'){
+      if(!this.level.defensePoint.active){this.level.defensePoint.active=true;this.notice('PROTEJA O SERVIDOR: FIQUE PERTO POR 12 SEGUNDOS.');}
+    }else if(target.kind==='disarm'){
+      this.level.disarmPoint.used=true;completeTask(this,'disarm');sound('success');this.notice('NÓ DE VÍRUS DESARMADO.');
+    }else if(target.kind==='upgrade'){
+      this.status='upgrade';this.keys.clear();this.onUpgrade?.(true);
     }else if(target.kind==='exit'){
       if(!canExit(this)){sound('error');this.notice('ACESSO NEGADO: CONCLUA OS OBJETIVOS PENDENTES.');return;}
       const key=this.levelIndex===2?'core':'exit';completeTask(this,key);
@@ -120,9 +156,15 @@ export class Game{
     this.activeTerminal.used=true;
     this.currentQuestion=null;
     const correct=index===q.correct;
-    if(correct){this.score+=CONFIG.POINTS.quiz;this.health=Math.min(100,this.health+5);sound('success');}
+    if(correct){
+      this.score+=CONFIG.POINTS.quiz;this.health=Math.min(100,this.health+5);
+      this.weaponAmmo.disruptor+=10;
+      this.onWeapon?.(this.weaponKey,this.weapon);
+      this.notice('RESPOSTA CORRETA! +10 DISPAROS DO DISRUPTOR');
+      sound('success');
+    }
     else sound('error');
-    return{correct,answer:q.a[q.correct],why:q.why};
+    return{correct,answer:q.a[q.correct],why:q.why,hint:q.hint};
   }
   closeQuiz(){if(this.status==='quiz'){this.status='playing';this.activeTerminal=null;}}
   pause(){if(this.status==='playing'){this.status='paused';this.keys.clear();return true;}return false;}

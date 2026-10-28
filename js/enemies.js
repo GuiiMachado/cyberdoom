@@ -31,18 +31,23 @@ export function updateEnemies(game,dt){
     if(e.dead)continue;
     const type=ENEMY_TYPES[e.type];const dx=player.x-e.x,dy=player.y-e.y,dist=Math.hypot(dx,dy);
     const canSee=dist<11&&lineClear(level,e.x,e.y,player.x,player.y);
-    if(e.type==='ransomware'&&e.warning>=0){
-      if(elapsed>=e.warning){
-        if(game.status==='playing'&&dist<type.range&&lineClear(level,e.x,e.y,player.x,player.y))game.takeDamage(type.damage*difficulty.damage);
-        e.warning=-1;
+    if(e.warning>=0&&elapsed>=e.warning){
+      if(game.status==='playing'&&canSee){
+        if(e.warningType==='charge'&&dist<3.2)game.takeDamage(type.damage*1.8*difficulty.damage);
+        else if(e.warningType==='spore'&&dist<7){game.takeDamage(type.damage*difficulty.damage);game.poisonUntil=elapsed+4;game.poisonTickAt=elapsed+1;game.notice('ESPOROS TÓXICOS! AFASTE-SE DO WORM.');}
+        else if(e.type==='ransomware'&&dist<type.range)game.takeDamage(type.damage*difficulty.damage);
       }
+      e.warning=-1;e.warningType=null;
     }
-    if(dist<type.range&&canSee){
-      if(elapsed-e.lastAttack>(e.type==='ransomware'?2.5:1.15)){
-        e.lastAttack=elapsed;
-        if(e.type==='ransomware'){e.warning=elapsed+.72;game.onNotice?.('⚠ RANSOMWARE CARREGANDO ATAQUE!');}
-        else game.takeDamage(type.damage*difficulty.damage);
-      }
+    if(e.type==='trojan'&&dist>type.range&&dist<4.2&&canSee&&elapsed-e.lastAttack>2.8&&e.warning<0){
+      e.lastAttack=elapsed;e.warning=elapsed+.82;e.warningType='charge';game.notice('TROIANO PREPARANDO INVESTIDA!');
+    }else if(e.type==='worm'&&dist>type.range&&dist<7&&canSee&&elapsed-e.lastAttack>3.2&&e.warning<0){
+      e.lastAttack=elapsed;e.warning=elapsed+.68;e.warningType='spore';game.notice('WORM CARREGANDO NUVEM DE ESPOROS!');
+    }
+    if(e.type==='ransomware'&&dist<type.range&&canSee&&elapsed-e.lastAttack>2.5&&e.warning<0){
+      e.lastAttack=elapsed;e.warning=elapsed+.72;e.warningType='boss';game.notice('RANSOMWARE CARREGANDO ATAQUE!');
+    }else if(dist<type.range&&canSee&&e.type!=='ransomware'){
+      if(elapsed-e.lastAttack>1.15){e.lastAttack=elapsed;game.takeDamage(type.damage*difficulty.damage);}
     }
     if(dist>.62&&dist<14){
       e.pathCooldown-=dt;
@@ -70,14 +75,19 @@ function registerHit(game,enemy,damage){
 }
 export function shoot(game){
   const weapon=game.weapon;
-  if(game.status!=='playing'||game.elapsed-game.lastShot<weapon.cooldown)return;
+  if(game.status!=='playing')return;
+  if(Number.isFinite(weapon.ammo)&&game.weaponAmmo[weapon.key]<=0){game.notice('DISRUPTOR SEM MUNIÇÃO. ALTERNE PARA A ARMA 1.');return;}
+  const cooldown=weapon.cooldown*(game.upgrades?.rapid?.78:1);
+  if(game.elapsed-game.lastShot<cooldown)return;
+  if(Number.isFinite(weapon.ammo))game.weaponAmmo[weapon.key]--;
   game.lastShot=game.elapsed;game.muzzle=.13;
   sound(weapon.sound);
   const hits=new Map();
   let hitCount=0;
   for(let pellet=0;pellet<(weapon.pellets||1);pellet++){
     let selected=null,selectedD=Infinity;
-    const pelletAngle=game.player.angle+((Math.random()*2-1)*(weapon.spread||0));
+    const spread=(weapon.spread||0)*(game.upgrades?.precision?.55:1);
+    const pelletAngle=game.player.angle+((Math.random()*2-1)*spread);
     for(const e of game.level.enemies){
       if(e.dead)continue;
       const dx=e.x-game.player.x,dy=e.y-game.player.y,dist=Math.hypot(dx,dy);
@@ -86,7 +96,11 @@ export function shoot(game){
       if(Math.abs(diff)<Math.atan2(ENEMY_TYPES[e.type].size*.42,dist)&&lineClear(game.level,game.player.x,game.player.y,e.x,e.y)&&dist<selectedD){selected=e;selectedD=dist;}
     }
     if(selected){
-      hits.set(selected,(hits.get(selected)||0)+weapon.damage);
+      const weakAngle=Math.atan2(.82,selectedD);
+      const weakpoint=selected.type==='ransomware'&&Math.abs(game.player.pitch-weakAngle)<.11;
+      const damage=weapon.damage*(weakpoint?2:1);
+      hits.set(selected,(hits.get(selected)||0)+damage);
+      if(weakpoint)game.weakHitFlash=.45;
       hitCount++;
     }
   }

@@ -22,7 +22,8 @@ export const LEVELS=[
       {type:'virus',...box(19,12)},{type:'virus',...box(21,6)},{type:'worm',...box(10,13)},{type:'trojan',...box(18,9)}
     ],
     extraSpawns:[['virus',11,13],['worm',20,3],['trojan',5,13],['virus',18,10],['virus',6,2],['worm',14,5],['virus',22,4],['worm',18,13],['trojan',10,5],['virus',14,12],['worm',3,5],['virus',22,10]],
-    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['archive','Recuperar arquivo importante'],['clear','Eliminar ameaças do setor'],['exit','Acessar setor seguinte']]
+    upgradePoint:box(4,8),defensePoint:{...box(12,5),duration:12},optionalTasks:['defend'],
+    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['archive','Recuperar arquivo importante'],['clear','Eliminar ameaças do setor'],['defend','[Opcional] Proteger servidor por 12 segundos'],['exit','Acessar setor seguinte']]
   },
   {
     title:'SETOR 02 // MEMÓRIA DO SISTEMA',map:maps[1],start:box(3,8),
@@ -33,10 +34,11 @@ export const LEVELS=[
       {type:'virus',...box(18,3)},{type:'worm',...box(18,13)},{type:'virus',...box(10,6)},{type:'trojan',...box(17,8)}
     ],
     extraSpawns:[['virus',10,13],['worm',18,6],['trojan',5,2],['virus',20,11],['virus',12,6],['worm',3,10],['trojan',22,5],['virus',17,13],['worm',13,3],['virus',22,3],['trojan',9,12],['worm',6,7]],
-    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['firewall','Ativar firewall'],['clear','Eliminar ameaças do setor'],['exit','Acessar núcleo infectado']]
+    upgradePoint:box(4,8),disarmPoint:{...box(18,5)},optionalTasks:['disarm'],
+    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['firewall','Ativar firewall'],['clear','Eliminar ameaças do setor'],['disarm','[Opcional] Desarmar nó de vírus'],['exit','Acessar núcleo infectado']]
   },
   {
-    title:'SETOR 03 // NÚCLEO INFECTADO',map:maps[2],start:box(3,8),
+    title:'SETOR 03 // NÚCLEO INFECTADO',map:maps[2],start:box(3,8),upgradePoint:box(4,8),
     pickups:[{type:'key',...box(3,12)},{type:'backup',...box(4,3)},{type:'update',...box(12,5)},{type:'shield',...box(13,12)}],
     terminals:[box(11,4)],exit:{type:'core',...box(22,12)},
     enemies:[
@@ -63,7 +65,9 @@ export function lineClear(level,ax,ay,bx,by){
 }
 export function makeLevel(index,config){
   const base=LEVELS[index];
-  const level={...base,openDoors:new Set(),pickups:base.pickups.map(p=>({...p,used:false})),
+  const level={...base,upgradePoint:base.upgradePoint?{...base.upgradePoint,used:false}:null,
+    defensePoint:base.defensePoint?{...base.defensePoint,active:false,remaining:base.defensePoint.duration}:null,
+    disarmPoint:base.disarmPoint?{...base.disarmPoint,used:false}:null,openDoors:new Set(),pickups:base.pickups.map(p=>({...p,used:false})),
     terminals:base.terminals.map((p,i)=>({...p,used:false,id:`${index}-${i}`})),
     firewall:base.firewall?{...base.firewall,used:false}:null,
     doors:base.map.flatMap((row,y)=>[...row].flatMap((cell,x)=>cell==='D'?[{x:x+.5,y:y+.5,ix:x,iy:y}]:[])),
