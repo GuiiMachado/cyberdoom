@@ -15,7 +15,7 @@ export function movePlayer(player,level,keys,dt){
   if(keys.has('ArrowLeft'))player.angle-=dt*1.85;
   if(keys.has('ArrowRight'))player.angle+=dt*1.85;
   if(forward===0&&strafe===0)return;
-  const magnitude=Math.hypot(forward,strafe),speed=CONFIG.PLAYER_SPEED*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.50:1)*dt;
+  const magnitude=Math.hypot(forward,strafe),speed=CONFIG.PLAYER_SPEED*(keys.has('ShiftLeft')||keys.has('ShiftRight')?1.50:1)*(player.speedBoostUntil>player.elapsed?1.22:1)*dt;
   const dx=(Math.cos(player.angle)*forward-Math.sin(player.angle)*strafe)/magnitude*speed;
   const dy=(Math.sin(player.angle)*forward+Math.cos(player.angle)*strafe)/magnitude*speed;
   if(canStand(level,player.x+dx,player.y,CONFIG.PLAYER_RADIUS))player.x+=dx;

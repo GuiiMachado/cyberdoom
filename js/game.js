@@ -19,10 +19,10 @@ export class Game{
     this.completedObjectives=0;this.answeredQuestions=new Set();this.shieldUntil=0;
     this.lastDamage=-10;this.lastShot=-10;this.muzzle=0;this.hitMarker=0;this.dmgFlash=0;
     this.resultSaved=false;this.keys.clear();this.weaponKey='deagle';this.weapon=WEAPONS[this.weaponKey];this.weaponAmmo={disruptor:WEAPONS.disruptor.ammo};
-    this.upgrades={rapid:false,precision:false,health:0};this.poisonUntil=0;this.poisonTickAt=0;this.weakHitFlash=0;
+    this.upgrades={rapid:false,precision:false,health:0,overdrive:0,damage:false,drain:false};this.poisonUntil=0;this.poisonTickAt=0;this.weakHitFlash=0;
     this.openLevel(0);this.status='playing';
     this.onWeapon?.(this.weaponKey,this.weapon);
-    this.notice('INICIALIZAÇÃO CONCLUÍDA. PROTEJA O SISTEMA!');
+    this.notice('OPERAÇÃO REDE SEGURA: INVESTIGUE A INVASÃO, CONTENHA O MALWARE E RECUPERE O SERVIDOR.');
   }
   openLevel(index){
     this.levelIndex=index;this.level=makeLevel(index,this.difficulty);
@@ -46,6 +46,7 @@ export class Game{
   update(dt){
     if(this.status!=='playing')return;
     dt=Math.min(.05,dt);this.elapsed+=dt;
+    this.player.elapsed=this.elapsed;
     this.muzzle=Math.max(0,this.muzzle-dt);this.hitMarker=Math.max(0,this.hitMarker-dt);this.dmgFlash=Math.max(0,this.dmgFlash-dt*1.75);
     this.weakHitFlash=Math.max(0,this.weakHitFlash-dt);
     movePlayer(this.player,this.level,this.keys,dt);
@@ -58,14 +59,17 @@ export class Game{
   closeUpgrade(){if(this.status==='upgrade'){this.status='playing';this.onUpgrade?.(false);}}
   buyUpgrade(key){
     if(this.status!=='upgrade')return false;
-    const options={health:{cost:300,label:'Reparo de emergência'},rapid:{cost:450,label:'Disparos rápidos'},precision:{cost:350,label:'Mira calibrada'},shield:{cost:250,label:'Firewall temporário'}};
+    const options={health:{cost:300,label:'Reparo de emergência'},rapid:{cost:450,label:'Disparos rápidos'},precision:{cost:350,label:'Mira calibrada'},shield:{cost:250,label:'Firewall temporário'},overdrive:{cost:400,label:'Overdrive de mobilidade'},damage:{cost:600,label:'Núcleo de impacto'},drain:{cost:550,label:'Recuperação por eliminação'}};
     const item=options[key];if(!item||this.score<item.cost)return false;
     if(key==='health'&&this.health>=100||key==='rapid'&&this.upgrades.rapid||key==='precision'&&this.upgrades.precision)return false;
     this.score-=item.cost;
     if(key==='health'){this.health=Math.min(100,this.health+30);this.upgrades.health++;}
     else if(key==='rapid')this.upgrades.rapid=true;
     else if(key==='precision')this.upgrades.precision=true;
-    else if(key==='shield')this.shieldUntil=Math.max(this.shieldUntil,this.elapsed)+12;
+    else if(key==='shield')this.shieldUntil=Math.max(this.shieldUntil,this.elapsed)+16;
+    else if(key==='overdrive'){this.player.speedBoostUntil=this.elapsed+18;this.upgrades.overdrive++;}
+    else if(key==='damage')this.upgrades.damage=true;
+    else if(key==='drain')this.upgrades.drain=true;
     this.notice(`${item.label.toUpperCase()} ADQUIRIDO`);this.onUpgrade?.(true);return true;
   }
   updateDefenseChallenge(dt){
@@ -145,7 +149,7 @@ export class Game{
       else{
         this.completedObjectives+=Object.values(this.level.tasks).filter(Boolean).length;
         this.health=Math.min(100,this.health+20);
-        this.openLevel(this.levelIndex+1);sound('success');this.notice('SETOR RESTAURADO! +500 PONTOS. PRÓXIMA MISSÃO.');
+        this.openLevel(this.levelIndex+1);sound('success');this.notice(`ETAPA ${this.levelIndex+1}/3 INICIADA. A OPERAÇÃO DE RECUPERAÇÃO CONTINUA.`);
       }
     }
   }

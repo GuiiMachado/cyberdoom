@@ -3,6 +3,11 @@ import {solidAt} from './levels.js';
 const palette={virus:'#ff5a6b',worm:'#d8f45d',trojan:'#b88dfd',ransomware:'#ff3864',key:'#fff16a',backup:'#5fddff',shield:'#68f6cd',update:'#67ff8c',archive:'#ffc377',terminal:'#65ccff',firewall:'#8cffc9',exit:'#5df7ec',core:'#fbf27a',server:'#69eaff',disarm:'#ff9a55',upgrade:'#d8a7ff'};
 const spriteCache=new Map();
 const wallCache=new Map();
+const sectorThemes=[
+  {skyTop:'#c8f2ff',skyBottom:'#f3fbff',floorTop:'#a9c8d2',floorBottom:'#e8f3f5',wallA:'#7697a5',wallB:'#c5dce3',accent:'#00c8e8'},
+  {skyTop:'#d4f4ff',skyBottom:'#fbfdff',floorTop:'#b3c4d9',floorBottom:'#eef0fa',wallA:'#8494b5',wallB:'#d4d8e9',accent:'#a34cff'},
+  {skyTop:'#ffe9d0',skyBottom:'#fffaf2',floorTop:'#d8b9a9',floorBottom:'#f8eee8',wallA:'#aa8584',wallB:'#ead1ca',accent:'#ff7955'}
+];
 function patternRect(c,x,y,w,h,color,alpha=.2){c.fillStyle=color;c.globalAlpha=alpha;c.fillRect(x,y,w,h);c.globalAlpha=1;}
 function drawVirus(c,color){
   c.fillStyle='#300a10';c.strokeStyle=color;c.lineWidth=4;
@@ -87,12 +92,14 @@ function sprite(type){
   }
   spriteCache.set(type,canvas);return canvas;
 }
-function wallTexture(type='wall'){
-  if(wallCache.has(type))return wallCache.get(type);
+function wallTexture(type='wall',sector=0){
+  const key=`${type}-${sector}`;
+  if(wallCache.has(key))return wallCache.get(key);
   const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
   const c=canvas.getContext('2d');
+  const theme=sectorThemes[sector]||sectorThemes[0];
   if(type==='door'){
-    const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,'#20313d');g.addColorStop(.45,'#6e8796');g.addColorStop(1,'#223340');
+    const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,theme.wallA);g.addColorStop(.45,theme.wallB);g.addColorStop(1,theme.wallA);
     c.fillStyle=g;c.fillRect(0,0,64,64);
     // metal panels
     c.strokeStyle='#8ca8b9';c.lineWidth=2;
@@ -103,29 +110,29 @@ function wallTexture(type='wall'){
     for(let x=8;x<64;x+=12)patternRect(c,x,0,2,64,'#c2d8e3',.08);
     // bolts and stripe
     c.fillStyle='#d7e8ef';[[10,10],[54,10],[10,54],[54,54],[20,20],[44,20],[20,44],[44,44]].forEach(([x,y])=>{c.beginPath();c.arc(x,y,1.6,0,Math.PI*2);c.fill();});
-    patternRect(c,5,28,54,8,'#55d4ff',.35);
+    patternRect(c,5,28,54,8,theme.accent,.55);
     patternRect(c,7,30,50,4,'#d8f5ff',.3);
   }else{
-    const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,'#162732');g.addColorStop(.52,'#325363');g.addColorStop(1,'#13212b');
+    const g=c.createLinearGradient(0,0,64,64);g.addColorStop(0,theme.wallA);g.addColorStop(.52,theme.wallB);g.addColorStop(1,theme.wallA);
     c.fillStyle=g;c.fillRect(0,0,64,64);
     // metal wall plates
-    c.strokeStyle='#203543';c.lineWidth=1.5;
+    c.strokeStyle='#ffffff';c.lineWidth=1.5;
     for(let yy=0;yy<64;yy+=16)for(let xx=0;xx<64;xx+=16)c.strokeRect(xx+.5,yy+.5,15,15);
     for(let i=0;i<4;i++){
       const x=4+i*15;
-      patternRect(c,x,4,10,8,'#93eaff',.18);
-      patternRect(c,x+1,23,12,3,'#deffff',.18);
-      patternRect(c,x,39,11,8,'#081621',.35);
-      patternRect(c,x,52,10,4,'#55ccef',.15);
+      patternRect(c,x,4,10,8,theme.accent,.3);
+      patternRect(c,x+1,23,12,3,'#ffffff',.48);
+      patternRect(c,x,39,11,8,'#284554',.2);
+      patternRect(c,x,52,10,4,theme.accent,.28);
     }
-    for(let y=0;y<64;y+=8)patternRect(c,0,y,64,1,'#0d1920',.28);
+    for(let y=0;y<64;y+=8)patternRect(c,0,y,64,1,'#284554',.12);
     for(let x=0;x<64;x+=8)patternRect(c,x,0,1,64,'#e8feff',.03);
     // bolts
     c.fillStyle='#d8ebf4';
     for(let yy=2;yy<64;yy+=16)for(let xx=2;xx<64;xx+=16){c.beginPath();c.arc(xx,yy,1.3,0,Math.PI*2);c.fill();}
     patternRect(c,0,0,64,64,'#fff',.03);
   }
-  wallCache.set(type,canvas);return canvas;
+  wallCache.set(key,canvas);return canvas;
 }
 function castRay(level,ox,oy,angle){
   const dx=Math.cos(angle),dy=Math.sin(angle);
@@ -148,21 +155,24 @@ export class Renderer{
   draw(game){
     const c=this.ctx,W=this.canvas.width,H=this.canvas.height;
     const horizon=H*.49+Math.sin(game.player.walkTime)*1.8+game.player.jumpHeight*H*.22+game.player.pitch*H*.42;
-    const sky=c.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#050c20');sky.addColorStop(1,'#244461');c.fillStyle=sky;c.fillRect(0,0,W,horizon);
-    const floor=c.createLinearGradient(0,horizon,0,H);floor.addColorStop(0,'#1b3440');floor.addColorStop(1,'#060f16');c.fillStyle=floor;c.fillRect(0,horizon,W,H-horizon);
-    c.strokeStyle='#58d8fa18';c.lineWidth=1;
+    const theme=sectorThemes[game.levelIndex]||sectorThemes[0];
+    const sky=c.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,theme.skyTop);sky.addColorStop(1,theme.skyBottom);c.fillStyle=sky;c.fillRect(0,0,W,horizon);
+    const floor=c.createLinearGradient(0,horizon,0,H);floor.addColorStop(0,theme.floorTop);floor.addColorStop(1,theme.floorBottom);c.fillStyle=floor;c.fillRect(0,horizon,W,H-horizon);
+    c.strokeStyle=`${theme.accent}38`;c.lineWidth=1;
     for(let i=1;i<13;i++){const yy=horizon+Math.pow(i/12,1.7)*(H-horizon);c.beginPath();c.moveTo(0,yy);c.lineTo(W,yy);c.stroke();}
+    c.strokeStyle='#ffffff55';c.lineWidth=2;
+    for(let i=0;i<7;i++){const x=W/2+(i-3)*W*.13;c.beginPath();c.moveTo(W/2+(x-W/2)*.08,horizon+2);c.lineTo(x,H);c.stroke();}
     for(let x=0;x<W;x+=3){
       const offset=Math.atan((x/W*2-1)*Math.tan(CONFIG.FOV/2));
       const ray=castRay(game.level,game.player.x,game.player.y,game.player.angle+offset);
       const corrected=ray.dist*Math.cos(offset),height=Math.min(2800,H/corrected*0.88);
       const top=Math.round(horizon-height/2);
       const shade=Math.max(.16,1-ray.dist/21)*(ray.side===1?.72:1);
-      const texture=wallTexture(ray.tile==='D'?'door':'wall');
+      const texture=wallTexture(ray.tile==='D'?'door':'wall',game.levelIndex);
       const sx=Math.max(0,Math.min(texture.width-1,Math.floor(ray.tex*(texture.width-1))));
       c.drawImage(texture,sx,0,1,texture.height,x,top,3,Math.ceil(height)+1);
-      c.fillStyle=`rgba(0,0,0,${Math.max(0,.82-shade)})`;c.fillRect(x,top,3,Math.ceil(height)+1);
-      c.fillStyle='rgba(255,255,255,.045)';c.fillRect(x,top+height*.11,3,Math.max(1,height*.013));c.fillRect(x,top+height*.86,3,Math.max(1,height*.013));
+      c.fillStyle=`rgba(20,38,52,${Math.max(0,.38-shade*.32)})`;c.fillRect(x,top,3,Math.ceil(height)+1);
+      c.fillStyle='rgba(255,255,255,.19)';c.fillRect(x,top+height*.11,3,Math.max(1,height*.013));c.fillRect(x,top+height*.86,3,Math.max(1,height*.013));
       for(let j=x;j<x+3&&j<W;j++)this.z[j]=corrected;
     }
     const objects=[...game.level.pickups.filter(p=>!p.used),...game.level.terminals.filter(t=>!t.used).map(p=>({...p,type:'terminal'}))];

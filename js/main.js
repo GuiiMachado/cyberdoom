@@ -93,10 +93,12 @@ function showUpgradeShop(open){
   $('upgrade-score').textContent=game.score.toLocaleString('pt-BR');
   for(const button of $('upgrade-shop').querySelectorAll('[data-upgrade]')){
     const key=button.dataset.upgrade;
-    button.disabled=game.score<{health:300,rapid:450,precision:350,shield:250}[key]
+    button.disabled=game.score<{health:300,rapid:450,precision:350,shield:250,overdrive:400,damage:600,drain:550}[key]
       ||key==='health'&&game.health>=100
       ||key==='rapid'&&game.upgrades.rapid
-      ||key==='precision'&&game.upgrades.precision;
+      ||key==='precision'&&game.upgrades.precision
+      ||key==='damage'&&game.upgrades.damage
+      ||key==='drain'&&game.upgrades.drain;
   }
   if(document.pointerLockElement)document.exitPointerLock();
 }
