@@ -14,7 +14,7 @@ const maps=[
 ];
 export const LEVELS=[
   {
-    title:'SETOR 01 // ÁREA DE TRABALHO',map:maps[0],start:box(3,8),
+    title:'ETAPA 1/3 // CONTER A INVASÃO',map:maps[0],start:box(3,8),
     pickups:[{type:'key',...box(4,12)},{type:'backup',...box(4,3)},{type:'archive',...box(21,5)},{type:'shield',...box(12,12)},{type:'update',...box(20,12)}],
     terminals:[box(12,11)], exit:{type:'exit',...box(22,12)},
     enemies:[
@@ -22,11 +22,11 @@ export const LEVELS=[
       {type:'virus',...box(19,12)},{type:'virus',...box(21,6)},{type:'worm',...box(10,13)},{type:'trojan',...box(18,9)}
     ],
     extraSpawns:[['virus',11,13],['worm',20,3],['trojan',5,13],['virus',18,10],['virus',6,2],['worm',14,5],['virus',22,4],['worm',18,13],['trojan',10,5],['virus',14,12],['worm',3,5],['virus',22,10]],
-    upgradePoint:box(4,8),defensePoint:{...box(12,5),duration:12},optionalTasks:['defend'],
-    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['archive','Recuperar arquivo importante'],['clear','Eliminar ameaças do setor'],['defend','[Opcional] Proteger servidor por 12 segundos'],['exit','Acessar setor seguinte']]
+    upgradePoint:box(4,8),defensePoint:{...box(12,5),duration:12},
+    objectives:[['key','Obter credencial de acesso'],['doors','Abrir caminho até o servidor'],['archive','Recuperar o registro da invasão'],['clear','Conter o malware no setor'],['defend','Estabilizar o servidor de recuperação'],['exit','Avançar pela rede comprometida']]
   },
   {
-    title:'SETOR 02 // MEMÓRIA DO SISTEMA',map:maps[1],start:box(3,8),
+    title:'ETAPA 2/3 // RESTAURAR A REDE',map:maps[1],start:box(3,8),
     pickups:[{type:'key',...box(3,3)},{type:'backup',...box(4,13)},{type:'shield',...box(12,12)},{type:'update',...box(20,13)}],
     terminals:[box(11,11)],firewall:box(19,5),exit:{type:'exit',...box(22,12)},
     enemies:[
@@ -34,11 +34,11 @@ export const LEVELS=[
       {type:'virus',...box(18,3)},{type:'worm',...box(18,13)},{type:'virus',...box(10,6)},{type:'trojan',...box(17,8)}
     ],
     extraSpawns:[['virus',10,13],['worm',18,6],['trojan',5,2],['virus',20,11],['virus',12,6],['worm',3,10],['trojan',22,5],['virus',17,13],['worm',13,3],['virus',22,3],['trojan',9,12],['worm',6,7]],
-    upgradePoint:box(4,8),disarmPoint:{...box(18,5)},optionalTasks:['disarm'],
-    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['firewall','Ativar firewall'],['clear','Eliminar ameaças do setor'],['disarm','[Opcional] Desarmar nó de vírus'],['exit','Acessar núcleo infectado']]
+    upgradePoint:box(4,8),disarmPoint:{...box(18,5)},
+    objectives:[['key','Obter credencial do núcleo'],['doors','Abrir os dois segmentos de rede'],['firewall','Ativar proteção do servidor'],['clear','Eliminar o malware remanescente'],['disarm','Desarmar o nó que reinfecta a rede'],['exit','Acessar o núcleo comprometido']]
   },
   {
-    title:'SETOR 03 // NÚCLEO INFECTADO',map:maps[2],start:box(3,8),upgradePoint:box(4,8),
+    title:'ETAPA 3/3 // RECUPERAR O SISTEMA',map:maps[2],start:box(3,8),upgradePoint:box(4,8),
     pickups:[{type:'key',...box(3,12)},{type:'backup',...box(4,3)},{type:'update',...box(12,5)},{type:'shield',...box(13,12)}],
     terminals:[box(11,4)],exit:{type:'core',...box(22,12)},
     enemies:[
@@ -46,7 +46,7 @@ export const LEVELS=[
       {type:'virus',...box(19,5)},{type:'worm',...box(18,10)},{type:'trojan',...box(17,12)},{type:'virus',...box(10,12)}
     ],
     extraSpawns:[['virus',5,2],['virus',20,13],['worm',14,3],['trojan',18,8],['virus',10,12],['worm',21,3],['virus',22,5],['worm',6,13],['trojan',12,5],['virus',17,3],['worm',19,9],['virus',14,13]],
-    objectives:[['key','Coletar chave digital'],['doors','Liberar as 2 portas'],['update','Instalar atualização digital'],['boss','Derrotar ransomware'],['core','Restaurar núcleo do sistema']]
+    objectives:[['key','Obter chave de restauração'],['doors','Liberar acesso ao núcleo'],['update','Instalar atualização de segurança'],['boss','Neutralizar o ransomware'],['core','Restaurar o servidor e concluir a operação']]
   }
 ];
 export function solidAt(level,x,y){

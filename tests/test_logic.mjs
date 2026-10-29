@@ -59,8 +59,11 @@ test('Coleta, chave, duas portas e interação desbloqueiam próxima fase',()=>{
   assert(g.level.tasks.doors);assert(canStand(g.level,8.5,8.5));
   g.player.x=21.5;g.player.y=5.5;g.collectPickups();assert(g.level.tasks.archive);
   g.level.enemies.forEach(e=>e.dead=true);g.onAllClear();assert(g.level.tasks.clear);
+  g.player.x=g.level.defensePoint.x;g.player.y=g.level.defensePoint.y;g.interact();
+  for(let i=0;i<260;i++)g.update(.05);
+  assert(g.level.tasks.defend);
   g.player.x=22.5;g.player.y=12.5;g.interact();assert.equal(g.levelIndex,1);
-  assert(g.score>=500);assert.equal(g.completedObjectives,5);
+  assert(g.score>=500);assert.equal(g.completedObjectives,6);
 });
 test('Sem a chave a porta não se abre; sem objetivos não sai do setor',()=>{
   const {game:g}=setup('easy');g.player.x=7.25;g.player.y=8.5;g.interact();assert.equal(g.level.openDoors.size,0);
@@ -93,21 +96,22 @@ test('Questão pontua uma vez e terminal é consumido',()=>{
   assert.equal(g.answeredQuestions.size,1);assert(g.level.terminals[0].used);
   g.closeQuiz();assert.equal(g.status,'playing');
 });
-test('Missões opcionais de proteção e desarme funcionam e não bloqueiam a saída',()=>{
+test('Proteção do servidor e desarme do nó são etapas obrigatórias da operação',()=>{
   const {game:g}=setup('easy');
   assert(g.level.defensePoint);
   for(const key of ['key','doors','archive','clear'])g.level.tasks[key]=true;
-  assert(canExit(g));
+  assert(!canExit(g));
   g.level.enemies.forEach(enemy=>{enemy.dead=true;});
   g.player.x=g.level.defensePoint.x;g.player.y=g.level.defensePoint.y;g.interact();
   assert(g.level.defensePoint.active);
   for(let i=0;i<260;i++){g.player.x=g.level.defensePoint.x;g.player.y=g.level.defensePoint.y;g.update(.05);}
   assert(g.level.tasks.defend);
+  assert(canExit(g));
   g.openLevel(1);assert(g.level.disarmPoint);
   for(const key of ['key','doors','firewall','clear'])g.level.tasks[key]=true;
-  assert(canExit(g));
+  assert(!canExit(g));
   g.player.x=g.level.disarmPoint.x;g.player.y=g.level.disarmPoint.y;g.interact();
-  assert(g.level.tasks.disarm);
+  assert(g.level.tasks.disarm);assert(canExit(g));
 });
 test('Estação de melhorias vende reparo, cadência, precisão e firewall',()=>{
   const {game:g}=setup('easy');g.score=2000;g.health=65;

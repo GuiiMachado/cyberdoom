@@ -68,6 +68,7 @@ function registerHit(game,enemy,damage){
   enemy.hp-=damage;
   if(enemy.hp<=0&&!enemy.dead){
     enemy.dead=true;game.score+=ENEMY_TYPES[enemy.type].points;game.kills++;
+    if(game.upgrades?.drain)game.health=Math.min(100,game.health+4);
     sound('kill');game.onNotice?.(`${ENEMY_TYPES[enemy.type].name} NEUTRALIZADO  +${ENEMY_TYPES[enemy.type].points}`);
     if(enemy.type==='ransomware')game.onBossDead?.();
     else if(game.level.enemies.every(e=>e.dead))game.onAllClear?.();
@@ -98,7 +99,7 @@ export function shoot(game){
     if(selected){
       const weakAngle=Math.atan2(.82,selectedD);
       const weakpoint=selected.type==='ransomware'&&Math.abs(game.player.pitch-weakAngle)<.11;
-      const damage=weapon.damage*(weakpoint?2:1);
+      const damage=weapon.damage*(game.upgrades?.damage?1.25:1)*(weakpoint?2:1);
       hits.set(selected,(hits.get(selected)||0)+damage);
       if(weakpoint)game.weakHitFlash=.45;
       hitCount++;
