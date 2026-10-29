@@ -42,13 +42,15 @@ function updateObjectives(){
   $('objectives').replaceChildren();
   for(const [key,label] of game.level.objectives){
     const item=document.createElement('div');item.className='objective'+(game.level.tasks[key]?' done':'');
-    item.textContent=(game.level.tasks[key]?'✓ ':'□ ')+label;
+    const progress=key==='defend'&&game.level.defensePoint?.active?` (${Math.ceil(game.level.defensePoint.remaining)}s)` :'';
+    item.textContent=(game.level.tasks[key]?'✓ ':'□ ')+label+progress;
     $('objectives').append(item);
   }
 }
 function updateWeaponHud(){
   $('weapon-name').textContent=game.weapon.name;
-  $('weapon-status').innerHTML=`${game.weapon.hud} <strong>∞</strong>`;
+  const ammo=Number.isFinite(game.weapon.ammo)?game.weaponAmmo[game.weaponKey]:'∞';
+  $('weapon-status').innerHTML=`${game.weapon.hud} <strong>${ammo}</strong>`;
   $('weapon').dataset.weapon=game.weaponKey;
 }
 function onEnd(result){
@@ -76,11 +78,28 @@ function onQuiz(question){
         if(j===question.correct)child.classList.add('correct');
         else if(j===i)child.classList.add('wrong');
       }
-      $('quiz-feedback').textContent=(result.correct?'✓ CORRETO! +150 PONTOS E +5 INTEGRIDADE. ':'✕ INCORRETO. ')+result.why;
+      $('quiz-feedback').textContent=result.correct
+        ?`✓ CORRETO! +150 PONTOS, +5 INTEGRIDADE E +10 MUNIÇÕES DO DISRUPTOR.\n${result.why}`
+        :`✕ INCORRETO. Dica: ${result.hint}\nResposta: ${result.answer}. ${result.why}`;
       $('btn-quiz-close').classList.remove('hidden');
     });holder.append(btn);
   });
   $('quiz').classList.remove('hidden');
+  if(document.pointerLockElement)document.exitPointerLock();
+}
+function showUpgradeShop(open){
+  $('upgrade-shop').classList.toggle('hidden',!open);
+  if(!open)return;
+  $('upgrade-score').textContent=game.score.toLocaleString('pt-BR');
+  for(const button of $('upgrade-shop').querySelectorAll('[data-upgrade]')){
+    const key=button.dataset.upgrade;
+    button.disabled=game.score<{health:300,rapid:450,precision:350,shield:250,overdrive:400,damage:600,drain:550}[key]
+      ||key==='health'&&game.health>=100
+      ||key==='rapid'&&game.upgrades.rapid
+      ||key==='precision'&&game.upgrades.precision
+      ||key==='damage'&&game.upgrades.damage
+      ||key==='drain'&&game.upgrades.drain;
+  }
   if(document.pointerLockElement)document.exitPointerLock();
 }
 function renderRanking(){
@@ -127,7 +146,7 @@ function loop(timestamp){
   if(timestamp>toastDeadline)$('toast').classList.remove('visible');
   requestAnimationFrame(loop);
 }
-game=new Game({onEnd,onQuiz,onNotice:notice,onLevel:()=>{},onWeapon:updateWeaponHud});
+game=new Game({onEnd,onQuiz,onNotice:notice,onLevel:()=>{},onWeapon:updateWeaponHud,onUpgrade:showUpgradeShop});
 bindSettingsToInputs();applyAudioSettings(false);
 $('btn-play').addEventListener('click',startNew);
 $('btn-audio-setup').addEventListener('click',()=>{showScreen('setup');applyAudioSettings(true);});
@@ -151,10 +170,17 @@ $('btn-admin').addEventListener('click',()=>{
 });
 $('btn-pause').addEventListener('click',pause);
 $('btn-resume').addEventListener('click',resume);
+$('btn-upgrade-close').addEventListener('click',()=>{game.closeUpgrade();canvas.requestPointerLock?.();});
+$('upgrade-shop').querySelectorAll('[data-upgrade]').forEach(button=>button.addEventListener('click',()=>game.buyUpgrade(button.dataset.upgrade)));
 $('btn-exit-game').addEventListener('click',()=>{game.status='menu';showScreen('menu');applyAudioSettings(false);});
 $('btn-quiz-close').addEventListener('click',()=>{game.closeQuiz();$('quiz').classList.add('hidden');canvas.requestPointerLock?.();});
 canvas.addEventListener('click',()=>{if(game.status==='playing'){if(!document.pointerLockElement)canvas.requestPointerLock?.();game.fire();}});
-document.addEventListener('mousemove',e=>{if(game.status==='playing'&&document.pointerLockElement===canvas)game.player.angle+=e.movementX*CONFIG.MOUSE_SENSITIVITY*Number(settings.mouseSensitivity||1);});
+document.addEventListener('mousemove',e=>{
+  if(game.status!=='playing'||document.pointerLockElement!==canvas)return;
+  const sensitivity=CONFIG.MOUSE_SENSITIVITY*Number(settings.mouseSensitivity||1);
+  game.player.angle+=e.movementX*sensitivity;
+  game.player.pitch=Math.max(-.55,Math.min(.55,game.player.pitch-e.movementY*sensitivity));
+});
 for(const [inputId,valId,formatter,key] of [
   ['mouse-sense','mouse-sense-value',v=>`${Number(v).toFixed(1)}x`,'mouseSensitivity'],
   ['music-volume','music-volume-value',v=>`${Math.round(Number(v)*100)}%`,'musicVolume'],
@@ -169,6 +195,7 @@ document.addEventListener('pointerlockchange',()=>{
 document.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)&&game.status==='playing')e.preventDefault();
   if(e.code==='Escape'){
+    if(game.status==='upgrade'){game.closeUpgrade();canvas.requestPointerLock?.();return;}
     if(game.status==='playing')pause();
     else if(game.status==='paused')resume();
     return;
@@ -176,10 +203,10 @@ document.addEventListener('keydown',e=>{
   if(game.status==='playing'){
     game.keys.add(e.code);
     if(e.code==='KeyE'&&!e.repeat)game.interact();
-    if((e.code==='Space'||e.code==='Mouse0')&&!e.repeat)game.fire();
+    if(e.code==='Space'&&!e.repeat)game.jump();
     if(e.code==='KeyQ'&&!e.repeat)game.cycleWeapon();
-    if(e.code==='Digit1'&&!e.repeat)game.setWeapon('deagle');
-    if(e.code==='Digit2'&&!e.repeat)game.setWeapon('mp40');
+    if(e.code==='Digit1'&&!e.repeat)game.selectWeaponSlot(1);
+    if(e.code==='Digit2'&&!e.repeat)game.selectWeaponSlot(2);
     if(e.code==='Digit3'&&!e.repeat)game.setWeapon('ak47');
   }else if(game.status==='ended'&&e.code==='KeyR')startNew();
 });

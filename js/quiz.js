@@ -25,10 +25,18 @@ export const QUESTIONS=[
 {topic:'Sistemas operacionais',q:'Por que atualizar softwares é importante?',a:['Para aumentar o peso do PC','Para mudar o mouse','Para corrigir falhas e vulnerabilidades','Para apagar backups'],correct:2,why:'Atualizações corrigem bugs e vulnerabilidades conhecidas.'},
 {topic:'Segurança',q:'Qual comportamento reduz o risco de vírus?',a:['Abrir todos anexos','Desativar proteção','Reutilizar a mesma senha','Baixar programas de fontes confiáveis'],correct:3,why:'Fontes confiáveis e verificação de arquivos reduzem exposição a malware.'}
 ];
+const TOPIC_HINTS={
+  'Hardware':'Relembre a função das peças físicas e dos componentes internos do computador.',
+  'Redes':'Pense em como os dispositivos se identificam e trocam dados em uma rede.',
+  'Segurança':'Considere práticas de proteção, prevenção de golpes e recuperação de dados.',
+  'Banco de dados':'Revise como tabelas organizam registros e como consultas localizam dados.',
+  'Programação':'Pense nos conceitos usados para guardar valores e controlar a execução de um programa.',
+  'Sistemas operacionais':'Relembre como o sistema organiza arquivos, programas e atualizações.'
+};
 export function nextQuestion(game){
   const available=QUESTIONS.map((q,i)=>i).filter(i=>!game.answeredQuestions.has(i));
   if(!available.length)return null;
   // Distribuição determinística distinta por nível/terminal, sem repetição na partida.
   const i=available[(game.answeredQuestions.size*7+game.levelIndex*3)%available.length];
-  return {index:i,...QUESTIONS[i]};
+  return {index:i,...QUESTIONS[i],hint:TOPIC_HINTS[QUESTIONS[i].topic]||'Revise os conceitos deste tema.'};
 }

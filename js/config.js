@@ -18,6 +18,7 @@ export const CONFIG = Object.freeze({
 
 export const WEAPONS = Object.freeze({
   deagle:{key:'deagle',name:'DESERT EAGLE',damage:56,pellets:1,spread:.008,cooldown:.38,range:14,sound:'shotDeagle',hud:'DESERT EAGLE'},
+  disruptor:{key:'disruptor',name:'DISRUPTOR',damage:112,pellets:1,spread:.004,cooldown:.5,range:16,sound:'shotDeagle',hud:'DISRUPTOR',ammo:10},
   mp40:{key:'mp40',name:'MP40',damage:18,pellets:1,spread:.018,cooldown:.10,range:13,sound:'shotMP40',hud:'MP40'},
   ak47:{key:'ak47',name:'AK-47',damage:32,pellets:1,spread:.014,cooldown:.145,range:15,sound:'shotAK47',hud:'AK-47'}
 });
